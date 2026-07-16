@@ -1,7 +1,6 @@
 import express from "express";
 import {
   registerUser,
-  registerTPO,
   loginUser,
   getMe,
   updateProfile,
@@ -13,7 +12,6 @@ import { authorizeRoles } from "../middleware/roleMiddleware.js";
 const router = express.Router();
 
 router.post("/register", registerUser);
-router.post("/register-tpo", protect, authorizeRoles("ADMIN"), registerTPO);
 router.post("/login", loginUser);
 router.get("/me", protect, getMe);
 router.put("/profile", protect, updateProfile);

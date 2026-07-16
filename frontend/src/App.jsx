@@ -1,9 +1,10 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import useAuthStore from "./store/authStore";
 
 import LandingPage      from "./pages/home/LandingPage";
 import Login            from "./pages/auth/Login";
 import Register         from "./pages/auth/Register";
+import ChangePassword   from "./pages/auth/ChangePassword";
 import CollegeRequest   from "./pages/college/CollegeRequest";
 import NotFound         from "./pages/NotFound";
 
@@ -22,6 +23,7 @@ import TPOStudents      from "./pages/tpo/Students";
 import TPOAnalytics     from "./pages/tpo/Analytics";
 import TPONotices       from "./pages/tpo/Notices";
 import NoticeForm       from "./pages/tpo/NoticeForm";
+import TPOTeam           from "./pages/tpo/Team";
 
 import AdminDashboard   from "./pages/admin/Dashboard";
 import AdminColleges    from "./pages/admin/Colleges";
@@ -30,7 +32,9 @@ import CreateTPO        from "./pages/admin/CreateTPO";
 // ─── PROTECTED ROUTE ─────────────────────────────────────────────────────────
 function ProtectedRoute({ children, roles }) {
   const { user } = useAuthStore();
+  const location = useLocation();
   if (!user) return <Navigate to="/login" replace />;
+  if(user.isFirstLogin && location.pathname !== "/change-password") return <Navigate to="/change-password" replace />;
   if (roles && !roles.includes(user.role)) return <Navigate to="/" replace />;
   return children;
 }
@@ -46,6 +50,8 @@ export default function App() {
         <Route path="/login"           element={<Login />} />
         <Route path="/register"        element={<Register />} />
         <Route path="/college/request" element={<CollegeRequest />} />
+
+        <Route path="/change-password" element={<ProtectedRoute roles={["STUDENT", "TPO", "ADMIN"]}><ChangePassword /></ProtectedRoute>} />
 
         {/* Student */}
         <Route path="/student/dashboard"    element={<ProtectedRoute roles={["STUDENT"]}><StudentDashboard /></ProtectedRoute>} />
@@ -65,7 +71,8 @@ export default function App() {
         <Route path="/tpo/analytics"             element={<ProtectedRoute roles={["TPO","ADMIN"]}><TPOAnalytics /></ProtectedRoute>} />
         <Route path="/tpo/notices"               element={<ProtectedRoute roles={["TPO","ADMIN"]}><TPONotices /></ProtectedRoute>} />
         <Route path="/tpo/notices/new"           element={<ProtectedRoute roles={["TPO","ADMIN"]}><NoticeForm /></ProtectedRoute>} />
-
+        <Route path="/tpo/team"                  element={<ProtectedRoute roles={["TPO","ADMIN"]}><TPOTeam /></ProtectedRoute>} />
+        
         {/* Admin */}
         <Route path="/admin/dashboard" element={<ProtectedRoute roles={["ADMIN"]}><AdminDashboard /></ProtectedRoute>} />
         <Route path="/admin/colleges"  element={<ProtectedRoute roles={["ADMIN"]}><AdminColleges /></ProtectedRoute>} />

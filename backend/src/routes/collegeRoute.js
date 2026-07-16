@@ -8,8 +8,8 @@ import {
 const router = express.Router();
 
 // All public — no auth needed
+router.post("/request", requestCollegeRegistration);
 router.get("/", getApprovedColleges);
 router.get("/:code", getCollegeByCode);
-router.post("/request", requestCollegeRegistration);
 
 export default router;

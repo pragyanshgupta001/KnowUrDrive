@@ -4,14 +4,17 @@ import api from "../../lib/axios";
 import useAuthStore from "../../store/authStore";
 
 export default function Login() {
-  const navigate              = useNavigate();
-  const { setAuth }           = useAuthStore();
-  const [form, setForm]       = useState({ email: "", password: "" });
-  const [error, setError]     = useState("");
+  const navigate = useNavigate();
+  const { setAuth } = useAuthStore();
+  const [form, setForm] = useState({ email: "", password: "" });
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
 
-  const onChange = (e) => { setForm({ ...form, [e.target.name]: e.target.value }); setError(""); };
+  const onChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+    setError("");
+  };
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -20,61 +23,87 @@ export default function Login() {
       setLoading(true);
       const { data } = await api.post("/auth/login", form);
       setAuth(data, data.token);
-      if      (data.role === "ADMIN") navigate("../admin/Dashboard");
-      else if (data.role === "TPO")   navigate("../tpo/Dashboard");
-      else                            navigate("../student/Dashboard");
+
+      if (data.isFirstLogin) {
+        navigate("/change-password", { replace: true });
+        return;
+      }
+
+      if(data.role === "ADMIN")
+        navigate("/admin/dashboard");
+      else if(data.role === "TPO")
+        navigate("/tpo/dashboard");
+      else
+        navigate("/student/dashboard");
     } catch (err) {
       setError(err.response?.data?.message || "Login failed. Try again.");
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div style={s.page}>
-      <div style={s.glow1} /><div style={s.glow2} />
+      <div style={s.glow1} />
+      <div style={s.glow2} />
+ 
       <div style={s.card}>
-
         <div style={s.logoWrap} onClick={() => navigate("/")}>
           Know<span style={s.acc}>Ur</span>Drive
         </div>
-
+ 
         <h1 style={s.title}>Welcome back</h1>
         <p style={s.sub}>Log in to your account to continue</p>
-
-        {error && <div style={s.errBox}><span style={s.errDot} />{error}</div>}
-
+ 
+        {error && (
+          <div style={s.errBox}>
+            <span style={s.errDot} />{error}
+          </div>
+        )}
+ 
         <form onSubmit={onSubmit} style={s.form}>
           <div style={s.field}>
             <label style={s.label}>Email address</label>
-            <input name="email" type="email" placeholder="you@college.edu"
-              value={form.email} onChange={onChange} style={s.input} autoComplete="email" />
+            <input
+              name="email" type="email" placeholder="you@college.edu"
+              value={form.email} onChange={onChange}
+              style={s.input} autoComplete="email"
+            />
           </div>
-
+ 
           <div style={s.field}>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
               <label style={s.label}>Password</label>
               <span style={s.forgot}>Forgot password?</span>
             </div>
             <div style={{ position: "relative" }}>
-              <input name="password" type={showPass ? "text" : "password"} placeholder="••••••••"
-                value={form.password} onChange={onChange}
-                style={{ ...s.input, paddingRight: 44 }} autoComplete="current-password" />
+              <input
+                name="password" type={showPass ? "text" : "password"}
+                placeholder="••••••••" value={form.password} onChange={onChange}
+                style={{ ...s.input, paddingRight: 44 }}
+                autoComplete="current-password"
+              />
               <button type="button" style={s.eye} onClick={() => setShowPass(!showPass)}>
                 {showPass ? "●" : "○"}
               </button>
             </div>
           </div>
-
+ 
           <button type="submit" style={s.submit} disabled={loading}>
             {loading ? <span style={s.spinner} /> : "Log in"}
           </button>
         </form>
-
-        <div style={s.divider}><div style={s.divLine} /><span style={s.divText}>or</span><div style={s.divLine} /></div>
-
+ 
+        <div style={s.divider}>
+          <div style={s.divLine} />
+          <span style={s.divText}>or</span>
+          <div style={s.divLine} />
+        </div>
+ 
         <div style={s.hints}>
           {[
             { role: "Student", color: "#6c63ff", text: "Use your college email + password set during registration" },
-            { role: "TPO",     color: "#ff6b6b", text: "Use credentials provided by your platform admin" },
+            { role: "TPO",     color: "#ff6b6b", text: "Use your email + date of birth (YYYY-MM-DD) on first login" },
           ].map((r) => (
             <div key={r.role} style={s.hintRow}>
               <span style={{ ...s.hintDot, background: r.color }} />
@@ -84,9 +113,13 @@ export default function Login() {
             </div>
           ))}
         </div>
-
-        <p style={s.bottom}>Don't have an account?{" "}<Link to="/register" style={s.link}>Register here</Link></p>
+ 
+        <p style={s.bottom}>
+          Don't have an account?{" "}
+          <Link to="/register" style={s.link}>Register here</Link>
+        </p>
       </div>
+ 
       <span style={s.back} onClick={() => navigate("/")}>← Back to home</span>
     </div>
   );
@@ -106,8 +139,8 @@ const s = {
   form:    { display: "flex", flexDirection: "column", gap: 18 },
   field:   { display: "flex", flexDirection: "column", gap: 7 },
   label:   { fontSize: 13, fontWeight: 500, color: "#aaa" },
-  forgot:  { fontSize: 12, color: "#6c63ff", cursor: "pointer" },
-  input:   { width: "100%", padding: "11px 14px", background: "#0e0e16", border: "1px solid #1e1e2e", borderRadius: 9, fontSize: 14, color: "#e8e8f0", fontFamily: "inherit", outline: "none" },
+  forgot:  { fontSize: 12, color: "#444", cursor: "default" },
+  input:   { width: "100%", padding: "11px 14px", background: "#0e0e16", border: "1px solid #1e1e2e", borderRadius: 9, fontSize: 14, color: "#e8e8f0", fontFamily: "inherit", outline: "none", boxSizing: "border-box" },
   eye:     { position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#444", fontSize: 12, cursor: "pointer", padding: 4 },
   submit:  { width: "100%", padding: "12px", background: "#6c63ff", border: "none", borderRadius: 9, fontSize: 14, fontWeight: 600, color: "#fff", cursor: "pointer", fontFamily: "inherit", marginTop: 4, minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center" },
   spinner: { width: 16, height: 16, border: "2px solid rgba(255,255,255,0.3)", borderTop: "2px solid #fff", borderRadius: "50%", animation: "spin 0.7s linear infinite", display: "inline-block" },

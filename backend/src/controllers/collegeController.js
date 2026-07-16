@@ -1,14 +1,25 @@
 import College from "../models/College.js";
 import Policy from "../models/Policy.js";
+import User from "../models/User.js";
 
 
 // REQUEST TO JOIN PLATFORM
 export const requestCollegeRegistration = async (req, res) => {
   try {
-    const { name, code, domain, address } = req.body;
+    const { name, code, domain, address, tpoName, tpoEmail, tpoDob, tpoPhone } = req.body;
 
     if (!name || !code) {
       return res.status(400).json({ message: "College name and code are required" });
+    }
+
+    if (!tpoName || !tpoEmail || !tpoDob) {
+      return res.status(400).json({ message: "Your name, email and date of birth are required" });
+    }
+ 
+    // Validate DOB format YYYY-MM-DD
+    const dobRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dobRegex.test(tpoDob)) {
+      return res.status(400).json({ message: "Date of birth must be in YYYY-MM-DD format" });
     }
 
     const exists = await College.findOne({ code: code.toUpperCase() });
@@ -16,17 +27,35 @@ export const requestCollegeRegistration = async (req, res) => {
       return res.status(400).json({ message: "A college with this code already exists" });
     }
 
+    const normalizedEmail = tpoEmail.toLowerCase();
+
+    const emailTaken = await User.findOne({ email: normalizedEmail });
+    if (emailTaken) {
+      return res.status(400).json({ message: "This TPO email is already registered on the platform" });
+    }
+
     const college = await College.create({
       name,
       code: code.toUpperCase(),
       domain,
       address,
-      isApproved: false    // admin must approve before students can register
+      isApproved: false,
+      tpoRequest: {
+        name:  tpoName.trim(),
+        email: normalizedEmail,
+        dob:   tpoDob,
+        phone: tpoPhone?.trim() || ""
+      }
     });
 
+    const saved = await College.findById(college._id).select("name code tpoRequest isApproved");
+    if (!saved?.tpoRequest?.email) {
+      return res.status(500).json({ message: "Failed to save TPO details. Please try again." });
+    }
+
     res.status(201).json({
-      message: "College registration request submitted. Wait for admin approval.",
-      college
+      message: "College registration request submitted. The TPO will receive login details once approved.",
+      college: saved
     });
 
   } catch (error) {

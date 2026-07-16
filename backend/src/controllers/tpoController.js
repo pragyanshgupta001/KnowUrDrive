@@ -2,8 +2,10 @@ import User from "../models/User.js";
 import Drive from "../models/Drive.js";
 import Application from "../models/Application.js";
 import Notice from "../models/Notice.js";
+import College from "../models/College.js";
+import bcrypt from "bcryptjs";
 import { notifyNewDrive, notifyStatusChange } from "../services/notificationService.js";
-
+import { sendTPOAdded } from "../services/emailService.js";
 
 // TPO DASHBOARD SUMMARY
 export const getTPODashboard = async (req, res) => {
@@ -59,9 +61,9 @@ export const getAllStudents = async (req, res) => {
       isActive: true
     };
 
-    if (department)       filter.department = department;
-    if (placementStatus)  filter.placementStatus = placementStatus.toUpperCase();
-    if (year)             filter.year = Number(year);
+    if (department) filter.department = department;
+    if (placementStatus) filter.placementStatus = placementStatus.toUpperCase();
+    if (year) filter.year = Number(year);
 
     const students = await User.find(filter)
       .select("-password")
@@ -168,10 +170,7 @@ export const getPlacementAnalytics = async (req, res) => {
       .map(s => s.currentOfferCTC)
       .filter(Boolean);
 
-    const avgCTC = ctcValues.length
-      ? (ctcValues.reduce((a, b) => a + b, 0) / ctcValues.length).toFixed(2)
-      : 0;
-
+    const avgCTC = ctcValues.length ? (ctcValues.reduce((a, b) => a + b, 0) / ctcValues.length).toFixed(2) : 0;
     const maxCTC = ctcValues.length ? Math.max(...ctcValues) : 0;
     const minCTC = ctcValues.length ? Math.min(...ctcValues) : 0;
 
@@ -264,6 +263,150 @@ export const createDriveAndNotify = async (req, res) => {
 
     res.status(201).json(drive);
 
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Get TPO team members
+export const getTPOTeam = async (req, res) => {
+  try {
+    const tpos = await User.find({
+      collegeId: req.user.collegeId,
+      role: "TPO",
+      isActive: true
+    }).select("-password").sort({ createdAt: 1 });
+ 
+    res.json(tpos);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Add New TPO (only by primary TPO)
+export const createCollegeTPO = async (req, res) => {
+  try {
+ 
+    // Rule 1 — only primary TPO
+    if (!req.user.isPrimary) {
+      return res.status(403).json({
+        message: "Only the primary TPO coordinator can add new TPO accounts"
+      });
+    }
+ 
+    const { name, email, dob, phone } = req.body;
+ 
+    if (!name || !email || !dob) {
+      return res.status(400).json({ message: "Name, email and date of birth are required" });
+    }
+ 
+    const dobRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dobRegex.test(dob)) {
+      return res.status(400).json({
+        message: "Date of birth must be in YYYY-MM-DD format (e.g. 1990-08-15)"
+      });
+    }
+
+    const collegeId = req.user.collegeId;
+ 
+    // Rule 2 — max 5 TPOs
+    const tpoCount = await User.countDocuments({
+      collegeId, role: "TPO", isActive: true
+    });
+    if (tpoCount >= 5) {
+      return res.status(400).json({
+        message: "Maximum 5 TPO coordinators allowed per college. Contact platform admin to increase this."
+      });
+    }
+ 
+    const exists = await User.findOne({ email: email.toLowerCase() });
+    if (exists) {
+      return res.status(400).json({ message: "An account with this email already exists" });
+    }
+ 
+    const college = await College.findById(collegeId);
+ 
+    // Rule 3 — DOB as temp password
+    const hashedPassword = await bcrypt.hash(dob, 10);
+ 
+    const newTPO = await User.create({
+      name,
+      email: email.toLowerCase(),
+      password: hashedPassword,
+      role: "TPO",
+      collegeId,
+      isVerified: true,
+      isActive: true,
+      isPrimary: false,   // Rule 4 — never primary
+      isFirstLogin: true
+    });
+ 
+    await College.findByIdAndUpdate(collegeId, {
+      $addToSet: { approvedTPOs: newTPO._id }
+    });
+ 
+    // Fire and forget — don't block response
+    sendTPOAdded(newTPO, college.name, req.user.name).catch((err) =>
+      console.error("TPO added email failed:", err.message)
+    );
+
+    res.status(201).json({
+      _id: newTPO._id,
+      name: newTPO.name,
+      email: newTPO.email,
+      isPrimary: newTPO.isPrimary,
+      message: `Account created. ${newTPO.name} will receive login instructions via email.`
+    });
+ 
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+//Remove TPO (only by primary TPO)
+export const deleteCollegeTPO = async (req, res) => {
+  try {
+    // Rule 1 — only primary TPO
+    if (!req.user.isPrimary) {
+      return res.status(403).json({
+        message: "Only the primary TPO coordinator can remove other TPO accounts"
+      });
+    }
+ 
+    const tpoToDelete = await User.findOne({
+      _id: req.params.tpoId,
+      collegeId: req.user.collegeId,
+      role: "TPO"
+    });
+ 
+    if (!tpoToDelete) {
+      return res.status(404).json({ message: "TPO not found in your college" });
+    }
+ 
+    // Rule 2 — cannot remove self
+    if (tpoToDelete._id.toString() === req.user._id.toString()) {
+      return res.status(400).json({
+        message: "You cannot remove yourself. Contact platform admin if needed."
+      });
+    }
+ 
+    // Rule 3 — cannot remove another primary
+    if (tpoToDelete.isPrimary) {
+      return res.status(400).json({
+        message: "Cannot remove the primary TPO coordinator. Contact platform admin."
+      });
+    }
+ 
+    // Rule 4 — soft delete
+    tpoToDelete.isActive = false;
+    await tpoToDelete.save();
+ 
+    await College.findByIdAndUpdate(req.user.collegeId, {
+      $pull: { approvedTPOs: tpoToDelete._id }
+    });
+ 
+    res.json({ message: `${tpoToDelete.name} has been removed successfully` });
+ 
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

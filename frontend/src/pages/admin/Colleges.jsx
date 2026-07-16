@@ -27,11 +27,22 @@ export default function AdminColleges() {
 
   const handleApproval = async (id, approve) => {
     try {
-      await api.put(`/admin/colleges/${id}/approval`, { isApproved: approve });
-      setColleges(colleges.map((c) => c._id === id ? { ...c, isApproved: approve } : c));
-      showToast(approve ? "College approved!" : "Approval revoked.");
+      const { data } = await api.put(`/admin/colleges/${id}/approval`, { isApproved: approve });
+      fetchColleges();
+      const isError = data.tpoProvision && !data.tpoProvision.created && approve;
+      showToast(data.message || (approve ? "College approved!" : "Approval revoked."), isError ? "error" : "success");
     } catch (err) {
       showToast(err.response?.data?.message || "Update failed.", "error");
+    }
+  };
+
+  const handleProvisionTPO = async (id) => {
+    try {
+      const { data } = await api.post("/admin/tpo", { collegeId: id, fromRequest: true });
+      showToast(data.message || "TPO account created.");
+      fetchColleges();
+    } catch (err) {
+      showToast(err.response?.data?.message || "Could not create TPO.", "error");
     }
   };
 
@@ -75,16 +86,27 @@ export default function AdminColleges() {
                     {c.domain && ` · ${c.domain}`}
                     {c.address && ` · ${c.address}`}
                   </div>
+                  {c.tpoRequest?.email && (
+                    <div style={s.tpoMeta}>
+                      TPO: {c.tpoRequest.name} · {c.tpoRequest.email}
+                      {c.tpoRequest.dob && ` · DOB ${c.tpoRequest.dob}`}
+                    </div>
+                  )}
                 </div>
                 <span style={{ ...s.statusPill, ...(c.isApproved ? s.pillGreen : s.pillAmber) }}>
                   {c.isApproved ? "Approved" : "Pending"}
                 </span>
-                <div style={{ display: "flex", gap: 8 }}>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   {!c.isApproved && (
                     <button style={s.approveBtn} onClick={() => handleApproval(c._id, true)}>Approve</button>
                   )}
                   {c.isApproved && (
                     <button style={s.revokeBtn} onClick={() => handleApproval(c._id, false)}>Revoke</button>
+                  )}
+                  {c.isApproved && c.tpoRequest?.email && (!c.approvedTPOs || c.approvedTPOs.length === 0) && (
+                    <button style={s.provisionBtn} onClick={() => handleProvisionTPO(c._id)}>
+                      Create TPO from request
+                    </button>
                   )}
                 </div>
               </div>
@@ -121,11 +143,13 @@ const s = {
   avatar:      { width: 42, height: 42, borderRadius: 10, background: "rgba(108,99,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 700, color: "#6c63ff", flexShrink: 0 },
   name:        { fontSize: 14, fontWeight: 700, color: "#ddd", marginBottom: 3 },
   meta:        { fontSize: 12, color: "#444" },
+  tpoMeta:     { fontSize: 12, color: "#6c63ff", marginTop: 4 },
   code:        { fontFamily: "monospace", color: "#888" },
   statusPill:  { fontSize: 10, fontWeight: 700, padding: "3px 9px", borderRadius: 6, flexShrink: 0 },
   pillGreen:   { background: "rgba(67,233,123,0.12)", color: "#43e97b" },
   pillAmber:   { background: "rgba(255,193,7,0.1)",   color: "#ffc107" },
   approveBtn:  { padding: "6px 14px", background: "rgba(67,233,123,0.12)", border: "1px solid rgba(67,233,123,0.3)", borderRadius: 7, fontSize: 12, color: "#43e97b", cursor: "pointer", fontFamily: "inherit" },
   revokeBtn:   { padding: "6px 14px", background: "rgba(255,107,107,0.08)", border: "1px solid rgba(255,107,107,0.25)", borderRadius: 7, fontSize: 12, color: "#ff6b6b", cursor: "pointer", fontFamily: "inherit" },
+  provisionBtn:{ padding: "6px 14px", background: "rgba(108,99,255,0.12)", border: "1px solid rgba(108,99,255,0.3)", borderRadius: 7, fontSize: 12, color: "#6c63ff", cursor: "pointer", fontFamily: "inherit" },
   policyRow:   { display: "flex", alignItems: "center", gap: 12, marginTop: 14, paddingTop: 14, borderTop: "1px solid #1a1a28" },
 };

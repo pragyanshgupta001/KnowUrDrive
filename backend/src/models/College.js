@@ -42,6 +42,14 @@ const collegeSchema = new mongoose.Schema({
     default: null
   },
 
+  // TOP crendentials
+  tpoRequest: {
+    name:  { type: String, trim: true },
+    email: { type: String, trim: true, lowercase: true },
+    dob:   { type: String }, // format: YYYY-MM-DD
+    phone: { type: String, trim: true }
+  },
+
   // Admin approval (approving new colleges joining the platform)
   isApproved: {
     type: Boolean,

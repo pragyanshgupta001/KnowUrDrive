@@ -74,6 +74,12 @@ const userSchema = new mongoose.Schema({
     default: null
   },
 
+  // true if 1st login after registration
+  isPrimary: {
+    type: Boolean,
+    default: false
+  },
+
   // Account status
   isVerified: {
     type: Boolean,
@@ -83,6 +89,11 @@ const userSchema = new mongoose.Schema({
   isActive: {
     type: Boolean,
     default: true
+  },
+
+  isFirstLogin: {
+    type: Boolean,
+    default: false
   }
 
 }, { timestamps: true });

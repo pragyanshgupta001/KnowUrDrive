@@ -22,6 +22,92 @@ const sendMail = async ({ to, subject, html }) => {
   }
 };
 
+// Welcome email sent to tpo when approved by admin. Contains login credentials.
+export const sendTPOWelcome = async (tpo, collegeName) => {
+  await sendMail({
+    to: tpo.email,
+    subject: `Your KnowUrDrive TPO account is ready — ${collegeName}`,
+    html: `
+      <div style="font-family:sans-serif;max-width:520px;margin:0 auto">
+        <h2 style="color:#6c63ff">Welcome to KnowUrDrive, ${tpo.name}!</h2>
+        <p>Your college <strong>${collegeName}</strong> has been approved on the KnowUrDrive platform.</p>
+        <p>Your TPO coordinator account is ready. Use the following credentials to log in:</p>
+ 
+        <table style="border-collapse:collapse;margin:20px 0;width:100%">
+          <tr>
+            <td style="padding:10px 16px;background:#f5f5f5;font-weight:600;width:120px">Email</td>
+            <td style="padding:10px 16px;background:#fafafa">${tpo.email}</td>
+          </tr>
+          <tr>
+            <td style="padding:10px 16px;background:#f5f5f5;font-weight:600">Password</td>
+            <td style="padding:10px 16px;background:#fafafa">
+              Your date of birth in <strong>YYYY-MM-DD</strong> format<br/>
+              <span style="color:#888;font-size:12px">e.g. if born 15 Aug 1990 → 1990-08-15</span>
+            </td>
+          </tr>
+        </table>
+ 
+        <p>
+          <a href="${process.env.CLIENT_URL}/login"
+            style="background:#6c63ff;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;font-weight:600">
+            Log in to KnowUrDrive
+          </a>
+        </p>
+ 
+        <p style="color:#e53e3e;font-size:13px;margin-top:20px">
+          ⚠️ You will be asked to change your password immediately after your first login.
+        </p>
+ 
+        <p style="color:#888;font-size:12px;margin-top:24px;border-top:1px solid #eee;padding-top:16px">
+          If you didn't request this, please contact us at ${process.env.EMAIL_USER}
+        </p>
+      </div>
+    `
+  });
+};
+ 
+// Sent when an existing TPO adds a new TPO to their college.
+export const sendTPOAdded = async (newTpo, collegeName, addedByName) => {
+  await sendMail({
+    to: newTpo.email,
+    subject: `You've been added as TPO for ${collegeName} on KnowUrDrive`,
+    html: `
+      <div style="font-family:sans-serif;max-width:520px;margin:0 auto">
+        <h2 style="color:#6c63ff">Hello ${newTpo.name}!</h2>
+        <p>
+          <strong>${addedByName}</strong> has added you as a TPO coordinator for
+          <strong>${collegeName}</strong> on KnowUrDrive.
+        </p>
+        <p>Use the following credentials to log in:</p>
+ 
+        <table style="border-collapse:collapse;margin:20px 0;width:100%">
+          <tr>
+            <td style="padding:10px 16px;background:#f5f5f5;font-weight:600;width:120px">Email</td>
+            <td style="padding:10px 16px;background:#fafafa">${newTpo.email}</td>
+          </tr>
+          <tr>
+            <td style="padding:10px 16px;background:#f5f5f5;font-weight:600">Password</td>
+            <td style="padding:10px 16px;background:#fafafa">
+              Your date of birth in <strong>YYYY-MM-DD</strong> format<br/>
+              <span style="color:#888;font-size:12px">e.g. if born 15 Aug 1990 → 1990-08-15</span>
+            </td>
+          </tr>
+        </table>
+ 
+        <p>
+          <a href="${process.env.CLIENT_URL}/login"
+            style="background:#6c63ff;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;font-weight:600">
+            Log in to KnowUrDrive
+          </a>
+        </p>
+ 
+        <p style="color:#e53e3e;font-size:13px;margin-top:20px">
+          ⚠️ You will be asked to change your password immediately after your first login.
+        </p>
+      </div>
+    `
+  });
+};
 
 // NEW DRIVE ALERT (sent to all eligible students)
 export const sendDriveAlert = async (student, drive) => {

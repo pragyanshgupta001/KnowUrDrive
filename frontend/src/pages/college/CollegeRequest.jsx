@@ -4,14 +4,16 @@ import api from "../../lib/axios";
 
 export default function CollegeRequest() {
   const navigate = useNavigate();
-  const [form, setForm]       = useState({ name: "", code: "", domain: "", address: "" });
+  const [form, setForm]       = useState({ name: "", code: "", tpoName: "", tpoDob: "",tpoEmail: "", domain: "", address: "" });
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError]     = useState("");
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    if (!form.name || !form.code) return setError("College name and code are required");
+    if (!form.name || !form.code || !form.tpoName || !form.tpoDob || !form.tpoEmail) {
+      return setError("All fields marked with * are required");
+    }
     try {
       setLoading(true);
       await api.post("/colleges/request", form);
@@ -67,6 +69,27 @@ export default function CollegeRequest() {
                   onChange={(e) => { setForm({ ...form, code: e.target.value.toUpperCase() }); setError(""); }}
                   style={{ ...s.input, fontFamily: "monospace", textTransform: "uppercase" }}
                   placeholder="ABES2024" maxLength={12} />
+              </div>
+
+              <div style={s.field}>
+                <label style={s.label}>TPO name *</label>
+                <input value={form.tpoName}
+                  onChange={(e) => { setForm({ ...form, tpoName: e.target.value }); setError(""); }}
+                  style={s.input} placeholder="John Doe" />
+              </div>
+
+              <div style={s.field}>
+                <label style={s.label}>TPO date of birth *</label>
+                <input type="date" value={form.tpoDob}
+                  onChange={(e) => { setForm({ ...form, tpoDob: e.target.value }); setError(""); }}
+                  style={s.input} />
+              </div>
+
+              <div style={s.field}>
+                <label style={s.label}>TPO email *</label>
+                <input value={form.tpoEmail}
+                  onChange={(e) => { setForm({ ...form, tpoEmail: e.target.value }); setError(""); }}
+                  style={s.input} placeholder="john.doe@abes.ac.in" />
               </div>
 
               <div style={s.field}>
