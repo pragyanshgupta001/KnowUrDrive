@@ -6,7 +6,7 @@ import {
 } from "../controllers/applicationController.js";
 import protect from "../middleware/authMiddleware.js";
 import { authorizeRoles } from "../middleware/roleMiddleware.js";
-import {placementLockMiddleware} from "../middleware/placementLockMiddleware.js";
+import placementLockMiddleware from "../middleware/placementLockMiddleware.js";
 
 const router = express.Router();
 
