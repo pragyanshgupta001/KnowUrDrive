@@ -34,6 +34,9 @@ const PREVIEW_DRIVES = [
 export default function LandingPage() {
   const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 600);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 40);
@@ -41,7 +44,17 @@ export default function LandingPage() {
     return () => window.removeEventListener("scroll", fn);
   }, []);
 
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 600);
+    };
+    window.addEventListener("resize", handleResize);
+    handleResize();
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const scrollTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+  const s = getStyles(isMobile);
 
   return (
     <div style={s.page}>
@@ -49,19 +62,62 @@ export default function LandingPage() {
       {/* NAV */}
       <nav style={{ ...s.nav, ...(scrolled ? s.navScrolled : {}) }}>
         <div style={s.navInner}>
-          <span style={s.logo} onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
-            Know<span style={s.logoAcc}>Ur</span>Drive
-          </span>
-          <div style={s.navLinks}>
-            <span style={s.navLink} onClick={() => scrollTo("features")}>Features</span>
-            <span style={s.navLink} onClick={() => scrollTo("how")}>How it works</span>
-            <span style={s.navLink} onClick={() => scrollTo("colleges")}>Colleges</span>
-          </div>
-          <div style={s.navBtns}>
-            <button style={s.btnNavGhost} onClick={() => navigate("/login")}>Log in</button>
-            <button style={s.btnNavFill}  onClick={() => navigate("/register")}>Get started</button>
-          </div>
+          {isMobile ? (
+            <>
+              <div style={s.hamburger} onClick={() => {
+                    setMenuOpen(!menuOpen);
+                    setAccountOpen(false);
+                  }}
+                >
+                  ☰
+                </div>
+
+                <span style={{ ...s.logo, margin: "0 auto" }} onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
+                  Know<span style={s.logoAcc}>Ur</span>Drive
+                </span>
+
+                <div style={s.accountWrapper}>
+                  <div style={s.accountBtn} onClick={() => {
+                      setAccountOpen(!accountOpen);
+                      setMenuOpen(false);
+                    }}
+                  >
+                    👤
+                  </div>
+                </div>
+            </>
+          ) : (
+            <>
+              <span style={s.logo} onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
+                Know<span style={s.logoAcc}>Ur</span>Drive
+              </span>
+              <div style={s.navLinks}>
+                <span style={s.navLink} onClick={() => scrollTo("features")}>Features</span>
+                <span style={s.navLink} onClick={() => scrollTo("how")}>How it works</span>
+                <span style={s.navLink} onClick={() => scrollTo("colleges")}>Colleges</span>
+              </div>
+              <div style={s.navBtns}>
+                <button style={s.btnNavGhost} onClick={() => navigate("/login")}>Log in</button>
+                <button style={s.btnNavFill}  onClick={() => navigate("/register")}>Register</button>
+              </div>
+            </>
+          )}
         </div>
+
+        {menuOpen && (
+          <div style={s.mobileMenu}>
+            <div style={s.mobileItem} onClick={() => scrollTo("features")}>Features</div>
+            <div style={s.mobileItem} onClick={() => scrollTo("how")}>How it Works</div>
+            <div style={s.mobileItem} onClick={() => scrollTo("colleges")}>Colleges</div>
+          </div>
+        )}
+
+        {accountOpen && (
+          <div style={s.accountMenu}>
+            <div style={s.mobileItem} onClick={() => navigate("/login")}>Login</div>
+            <div style={s.mobileItem} onClick={() => navigate("/register")}>Register</div>
+          </div>
+        )}
       </nav>
 
       {/* HERO */}
@@ -185,7 +241,7 @@ export default function LandingPage() {
         <div style={s.ctaGlow} />
         <h2 style={s.ctaTitle}>Ready to modernise your<br />placement cell?</h2>
         <p style={s.ctaSub}>Join in under 2 minutes. Free for students, always.</p>
-        <div style={s.heroCTAs}>
+        <div style={{ ...s.heroCTAs, justifyContent: "center" }}>
           <button style={s.btnHero} onClick={() => navigate("/register")}>Create student account</button>
           <button style={s.btnHeroGhost} onClick={() => navigate("/login")}>TPO login →</button>
         </div>
@@ -201,14 +257,14 @@ export default function LandingPage() {
             <span style={s.footerLink} onClick={() => navigate("/college/request")}>Register college</span>
             <span style={s.footerLink} onClick={() => navigate("/login")}>Login</span>
           </div>
-          <span style={s.footerCopy}>© 2025 KnowUrDrive. BTech minor project.</span>
+          <span style={s.footerCopy}>© 2026 KnowUrDrive. All rights reserved.</span>
         </div>
       </footer>
     </div>
   );
 }
 
-const s = {
+const getStyles = (isMobile) => ({
   page:         { background: "#0a0a0f", color: "#e8e8f0", fontFamily: "'DM Sans','Segoe UI',system-ui,sans-serif", minHeight: "100vh", overflowX: "hidden" },
   nav:          { position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, padding: "0 40px", transition: "background 0.3s, border-color 0.3s", borderBottom: "1px solid transparent" },
   navScrolled:  { background: "rgba(10,10,15,0.9)", backdropFilter: "blur(14px)", borderBottom: "1px solid #1e1e2e" },
@@ -220,19 +276,19 @@ const s = {
   navBtns:      { display: "flex", gap: 10 },
   btnNavGhost:  { background: "transparent", border: "1px solid #2a2a3e", color: "#aaa", padding: "8px 18px", borderRadius: 8, fontSize: 13, cursor: "pointer", fontFamily: "inherit" },
   btnNavFill:   { background: "#6c63ff", border: "none", color: "#fff", padding: "8px 18px", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" },
-  heroSection:  { minHeight: "100vh", display: "flex", alignItems: "center", padding: "100px 40px 60px", position: "relative", overflow: "hidden" },
+  heroSection:  { minHeight: "70vh", display: "flex", alignItems: "center", padding: "100px 40px 60px", position: "relative", overflow: "hidden" },
   glow1:        { position: "absolute", top: 60, left: "5%", width: 600, height: 600, pointerEvents: "none", background: "radial-gradient(circle, rgba(108,99,255,0.13) 0%, transparent 70%)" },
   glow2:        { position: "absolute", bottom: 0, right: "5%", width: 500, height: 500, pointerEvents: "none", background: "radial-gradient(circle, rgba(255,107,107,0.07) 0%, transparent 70%)" },
-  heroInner:    { maxWidth: 1100, margin: "0 auto", width: "100%", display: "flex", alignItems: "center", gap: 64, position: "relative", zIndex: 1 },
+  heroInner:    { maxWidth: 1100, margin: "0 auto", width: "100%", display: "flex", flexWrap: "wrap", alignItems: "center", gap: 64, position: "relative", zIndex: 1 },
   heroLeft:     { flex: 1, maxWidth: 520 },
   badge:        { display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(67,233,123,0.08)", border: "1px solid rgba(67,233,123,0.2)", color: "#43e97b", fontSize: 12, fontWeight: 500, padding: "6px 14px", borderRadius: 20, marginBottom: 28 },
   badgeDot:     { display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: "#43e97b", boxShadow: "0 0 8px #43e97b" },
-  heroTitle:    { fontFamily: "'Inter','DM Sans',sans-serif", fontSize: 58, fontWeight: 800, lineHeight: 1.2, color: "#fff", letterSpacing: "-2px", margin: "0 0 20px" },
-  heroBody:     { fontSize: 16, color: "#666", lineHeight: 1.75, margin: "0 0 36px" },
+  heroTitle:    { fontFamily: "'Inter','DM Sans',sans-serif", fontSize: isMobile ? 40 : 58, fontWeight: 800, lineHeight: 1.2, color: "#fff", letterSpacing: "-2px", margin: "0 0 20px" },
+  heroBody:     { fontSize: isMobile ? 14 : 16, color: "#666", lineHeight: 1.75, margin: "0 0 36px" },
   heroCTAs:     { display: "flex", gap: 14, flexWrap: "wrap", alignItems: "center" },
-  btnHero:      { background: "#6c63ff", border: "none", color: "#fff", padding: "13px 28px", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" },
-  btnHeroGhost: { background: "transparent", border: "1px solid #2a2a3e", color: "#999", padding: "13px 28px", borderRadius: 10, fontSize: 14, cursor: "pointer", fontFamily: "inherit" },
-  previewCard:  { flexShrink: 0, width: 340, background: "#111118", border: "1px solid #1e1e2e", borderRadius: 16, overflow: "hidden" },
+  btnHero:      { background: "#6c63ff", border: "none", color: "#fff", padding: isMobile ? "10px 20px" : "13px 28px", borderRadius: 10, fontSize: isMobile ? 14 : 16, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" },
+  btnHeroGhost: { background: "transparent", border: "1px solid #2a2a3e", color: "#999", padding: isMobile ? "10px 20px" : "13px 28px", borderRadius: 10, fontSize: isMobile ? 14 : 16, cursor: "pointer", fontFamily: "inherit" },
+  previewCard:  { flexShrink: 1, width: 340, background: "#111118", border: "1px solid #1e1e2e", borderRadius: 16, overflow: "hidden" },
   previewHeader:{ background: "#0e0e16", borderBottom: "1px solid #1a1a28", padding: "12px 16px", display: "flex", alignItems: "center", gap: 6 },
   dot:          { width: 10, height: 10, borderRadius: "50%" },
   previewLabel: { marginLeft: "auto", fontSize: 11, color: "#444" },
@@ -243,16 +299,16 @@ const s = {
   previewTag:   { fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 6, border: "1px solid", flexShrink: 0 },
   previewFooter:{ padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" },
   previewBtn:   { background: "#1a1a28", border: "1px solid #2a2a3e", color: "#888", fontSize: 11, padding: "5px 12px", borderRadius: 6, cursor: "pointer", fontFamily: "inherit" },
-  statsBar:     { display: "flex", justifyContent: "center", borderTop: "1px solid #1a1a28", borderBottom: "1px solid #1a1a28", background: "#0d0d14" },
+  statsBar:     { display: "flex", flexWrap: "wrap", justifyContent: "center", borderTop: "1px solid #1a1a28", borderBottom: "1px solid #1a1a28", background: "#0d0d14" },
   statItem:     { flex: 1, maxWidth: 220, padding: "36px 24px", textAlign: "center" },
-  statVal:      { fontFamily: "'Inter','DM Sans',sans-serif", fontSize: 38, fontWeight: 800, color: "#fff", letterSpacing: "-1.5px" },
+  statVal:      { fontFamily: "'Inter','DM Sans',sans-serif", fontSize: isMobile ? 34 : 38, fontWeight: 800, color: "#fff", letterSpacing: "-1.5px" },
   statLbl:      { fontSize: 13, color: "#555", marginTop: 4 },
   section:      { maxWidth: 1100, margin: "0 auto", padding: "90px 40px" },
   sectionAlt:   { maxWidth: "100%", background: "#0d0d14", borderTop: "1px solid #1a1a28", borderBottom: "1px solid #1a1a28", padding: "90px 0" },
   eyebrow:      { fontSize: 11, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#6c63ff", marginBottom: 12 },
-  sectionTitle: { fontFamily: "'Inter','DM Sans',sans-serif", fontSize: 38, fontWeight: 800, color: "#fff", letterSpacing: "-0.8px", margin: "0 0 16px", lineHeight: 1.25 },
+  sectionTitle: { fontFamily: "'Inter','DM Sans',sans-serif", fontSize: isMobile ? 34 : 38, fontWeight: 800, color: "#fff", letterSpacing: "-0.8px", margin: "0 0 16px", lineHeight: 1.25 },
   sectionSub:   { fontSize: 15, color: "#555", lineHeight: 1.7, maxWidth: 480, margin: "0 0 52px" },
-  featGrid:     { display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 },
+  featGrid:     { display: "grid", gridTemplateColumns: isMobile ? "repeat(1,1fr)" : "repeat(3,1fr)", gap: 16 },
   featCard:     { background: "#111118", border: "1px solid #1a1a28", borderRadius: 14, padding: "26px 22px" },
   featIcon:     { fontSize: 20, color: "#6c63ff", marginBottom: 14 },
   featTitle:    { fontFamily: "'Inter','DM Sans',sans-serif", fontSize: 15, fontWeight: 700, color: "#e8e8f0", marginBottom: 8 },
@@ -268,14 +324,14 @@ const s = {
   collegeRow:   { display: "flex", gap: 12, flexWrap: "wrap" },
   collegeCard:  { background: "#111118", border: "1px solid #1a1a28", borderRadius: 12, padding: "18px 22px", display: "flex", alignItems: "center", gap: 12 },
   collegeAvatar:{ width: 38, height: 38, borderRadius: 9, background: "#1a1a28", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 15, color: "#6c63ff", flexShrink: 0 },
-  collegeName:  { fontSize: 14, fontWeight: 500, color: "#bbb" },
+  collegeName:  { fontSize: isMobile ? 13 : 14, fontWeight: 500, color: "#bbb" },
   ctaSection:   { padding: "90px 40px", textAlign: "center", borderTop: "1px solid #1a1a28", position: "relative", overflow: "hidden" },
   ctaGlow:      { position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 700, height: 400, pointerEvents: "none", background: "radial-gradient(ellipse, rgba(108,99,255,0.14) 0%, transparent 70%)" },
-  ctaTitle:     { fontFamily: "'Inter','DM Sans',sans-serif", fontSize: 40, fontWeight: 800, color: "#fff", letterSpacing: "-1px", margin: "0 0 14px", lineHeight: 1.25, position: "relative" },
-  ctaSub:       { fontSize: 15, color: "#555", margin: "0 0 36px", position: "relative" },
+  ctaTitle:     { fontFamily: "'Inter','DM Sans',sans-serif", fontSize: isMobile ? 36 : 40, fontWeight: 800, color: "#fff", letterSpacing: "-1px", margin: "0 0 14px", lineHeight: 1.25, position: "relative" },
+  ctaSub:       { fontSize: isMobile ? 14 : 15, color: "#555", margin: "0 0 36px", position: "relative" },
   footer:       { borderTop: "1px solid #1a1a28", padding: "28px 40px" },
   footerInner:  { maxWidth: 1100, margin: "0 auto", display: "flex", alignItems: "center", gap: 32, flexWrap: "wrap" },
   footerLinks:  { display: "flex", gap: 24, flex: 1 },
   footerLink:   { fontSize: 13, color: "#444", cursor: "pointer" },
   footerCopy:   { fontSize: 12, color: "#333" },
-};
+});
