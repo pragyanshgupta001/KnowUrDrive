@@ -334,4 +334,10 @@ const getStyles = (isMobile) => ({
   footerLinks:  { display: "flex", gap: 24, flex: 1 },
   footerLink:   { fontSize: 13, color: "#444", cursor: "pointer" },
   footerCopy:   { fontSize: 12, color: "#333" },
+  hamburger: { fontSize: 28, color: "#fff", cursor: "pointer", userSelect: "none" },
+  accountWrapper: { position: "relative" },
+  accountBtn: {  fontSize: 26, color: "#fff", cursor: "pointer", userSelect: "none" },
+  mobileMenu: { position: "absolute", top: 64, left: 0, width: 220, background: "#111118", borderRight: "1px solid #1a1a28", borderBottom: "1px solid #1a1a28", zIndex: 1000 },
+  accountMenu: { position: "absolute", top: 64, right: 20, width: 170, background: "#111118", border: "1px solid #1a1a28", borderRadius: 10, overflow: "hidden", zIndex: 1000, },
+  mobileItem: { padding: "14px 18px", color: "#bbb", cursor: "pointer", borderBottom: "1px solid #1a1a28" },
 });
